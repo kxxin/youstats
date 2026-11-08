@@ -1,8 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDuration } from "@/lib/format";
+import { signInWithGoogle, useUser } from "@/lib/supabase/use-user";
+import { loadLatestWatchHistoryFromDrive } from "@/lib/takeout/drive";
 import { parseWatchHistory, type ParseResult } from "@/lib/takeout/parse";
+import { classifyView, type ViewKind } from "@/lib/youtube/classify";
+import { fetchVideoMeta } from "@/lib/youtube/client";
+import type { VideoMeta } from "@/lib/youtube/types";
 import {
   estimateDurations,
   mostRewatched,
@@ -24,7 +29,7 @@ const RANGES: { id: Range; label: string }[] = [
 
 interface Loaded {
   result: ParseResult;
-  source: "file" | "sample";
+  source: "file" | "sample" | "drive";
   fileName: string;
 }
 
@@ -35,6 +40,8 @@ export function InsightsClient() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const user = useUser();
 
   async function load(
     text: Promise<string>,
@@ -59,14 +66,30 @@ export function InsightsClient() {
       );
     } finally {
       setBusy(false);
+      setStatus(null);
     }
+  }
+
+  function loadFromDrive() {
+    let name = "Google Drive";
+    load(
+      loadLatestWatchHistoryFromDrive(setStatus).then(({ text, archive }) => {
+        name = `Google Drive · ${archive.name}`;
+        return text;
+      }),
+      "drive",
+      "Google Drive",
+    ).then(() => setLoaded((l) => (l ? { ...l, fileName: name } : l)));
   }
 
   if (!loaded) {
     return (
       <UploadPanel
         busy={busy}
+        status={status}
         error={error}
+        signedIn={!!user}
+        onDrive={loadFromDrive}
         onFile={(f) => load(f.text(), "file", f.name)}
         onSample={() =>
           load(
@@ -78,12 +101,21 @@ export function InsightsClient() {
       />
     );
   }
-  return <Dashboard loaded={loaded} onReset={() => setLoaded(null)} />;
+  return (
+    <Dashboard
+      loaded={loaded}
+      signedIn={!!user}
+      onReset={() => setLoaded(null)}
+    />
+  );
 }
 
 function UploadPanel(props: {
   busy: boolean;
+  status: string | null;
   error: string | null;
+  signedIn: boolean;
+  onDrive: () => void;
   onFile: (f: File) => void;
   onSample: () => void;
 }) {
@@ -129,6 +161,35 @@ function UploadPanel(props: {
             Try sample data
           </button>
         </div>
+        <div className="text-muted mt-5 text-sm">
+          {props.signedIn ? (
+            <button
+              type="button"
+              disabled={props.busy}
+              onClick={props.onDrive}
+              className="text-accent font-medium underline underline-offset-4 disabled:opacity-60"
+            >
+              Import latest Takeout from Google Drive
+            </button>
+          ) : (
+            <span>
+              Using scheduled Takeout exports?{" "}
+              <button
+                type="button"
+                onClick={() => signInWithGoogle()}
+                className="text-accent underline underline-offset-4"
+              >
+                Sign in
+              </button>{" "}
+              to import from Google Drive.
+            </span>
+          )}
+        </div>
+        {props.status && (
+          <p className="text-muted mt-3 text-xs" aria-live="polite">
+            {props.status}
+          </p>
+        )}
         <input
           ref={input}
           type="file"
@@ -160,25 +221,93 @@ function UploadPanel(props: {
   );
 }
 
+type KindFilter = "all" | Exclude<ViewKind, "unknown">;
+const KINDS: { id: KindFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "video", label: "Videos" },
+  { id: "live", label: "Live" },
+  { id: "archive", label: "Archive" },
+];
+
 function Dashboard({
   loaded,
+  signedIn,
   onReset,
 }: {
   loaded: Loaded;
+  signedIn: boolean;
   onReset: () => void;
 }) {
   const [range, setRange] = useState<Range>("365");
   const [includeMusic, setIncludeMusic] = useState(true);
+  const [kind, setKind] = useState<KindFilter>("all");
+  const [meta, setMeta] = useState<Map<string, VideoMeta> | null>(null);
+  const [metaProgress, setMetaProgress] = useState<string>("");
+  const [metaError, setMetaError] = useState<string | null>(null);
   const all = loaded.result.events;
   const hasMusic = useMemo(() => all.some((e) => e.product === "music"), [all]);
+
+  // Enrich with YouTube metadata (live/archive split, real lengths) when signed in.
+  const wantsMeta = signedIn && loaded.source !== "sample";
+  useEffect(() => {
+    if (!wantsMeta) return;
+    let cancelled = false;
+    const ids = all.flatMap((e) => (e.videoId ? [e.videoId] : []));
+    fetchVideoMeta(ids, (done, total) => {
+      if (!cancelled)
+        setMetaProgress(` ${nf.format(done)}/${nf.format(total)}`);
+    })
+      .then((m) => {
+        if (!cancelled) setMeta(m);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled)
+          setMetaError(
+            `Couldn't classify videos: ${e instanceof Error ? e.message : "unknown error"}`,
+          );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [all, wantsMeta]);
+  const metaStatus =
+    metaError ??
+    (wantsMeta && !meta
+      ? `Checking which videos were live streams…${metaProgress}`
+      : null);
 
   const view = useMemo(() => {
     const lastTime = all.at(-1)?.time.getTime() ?? 0;
     const from = range === "all" ? -Infinity : lastTime - Number(range) * 864e5;
-    const events = all.filter(
+    const base = all.filter(
       (e) => e.time.getTime() > from && (includeMusic || e.product !== "music"),
     );
-    const durations = estimateDurations(events);
+    const kinds = base.map((e) =>
+      meta
+        ? classifyView(e.time, e.videoId ? meta.get(e.videoId) : undefined)
+        : "unknown",
+    );
+    // Real lengths cap the estimate; live views have no fixed length.
+    const lengths = base.map((e, i) =>
+      kinds.at(i) === "live" || !e.videoId
+        ? null
+        : (meta?.get(e.videoId)?.durationSec ?? null),
+    );
+    const baseDurations = estimateDurations(base, undefined, lengths);
+    const byKind = KINDS.slice(1).map((k) => {
+      let views = 0;
+      let seconds = 0;
+      kinds.forEach((x, i) => {
+        if (x === k.id) {
+          views++;
+          seconds += baseDurations.at(i) ?? 0;
+        }
+      });
+      return { ...k, views, seconds };
+    });
+    const keep = (i: number) => kind === "all" || kinds.at(i) === kind;
+    const events = base.filter((_, i) => keep(i));
+    const durations = baseDurations.filter((_, i) => keep(i));
     const summary = summarize(events, durations);
     const spanDays =
       summary.first && summary.last
@@ -192,8 +321,9 @@ function Dashboard({
       grid: weekHourGrid(events),
       channels: topChannels(events, durations, 10),
       rewatched: mostRewatched(events, 5),
+      byKind,
     };
-  }, [all, range, includeMusic]);
+  }, [all, range, includeMusic, meta, kind]);
 
   const s = view.summary;
   const linked = loaded.source === "file";
@@ -220,6 +350,27 @@ function Dashboard({
             </button>
           ))}
         </div>
+        {meta && (
+          <div
+            role="radiogroup"
+            aria-label="Content type"
+            className="border-border bg-card inline-flex rounded-lg border p-0.5"
+          >
+            {KINDS.map((k) => (
+              <button
+                key={k.id}
+                role="radio"
+                aria-checked={kind === k.id}
+                onClick={() => setKind(k.id)}
+                className={`rounded-md px-3 py-1.5 text-sm ${
+                  kind === k.id ? "bg-accent-soft font-medium" : "text-muted"
+                }`}
+              >
+                {k.label}
+              </button>
+            ))}
+          </div>
+        )}
         {hasMusic && (
           <label className="text-muted flex items-center gap-2 text-sm">
             <input
@@ -247,6 +398,43 @@ function Dashboard({
         {loaded.result.skipped.ads > 0 &&
           ` · ${nf.format(loaded.result.skipped.ads)} ads excluded`}
       </p>
+      {metaStatus && (
+        <p className="text-muted mt-1 text-xs" aria-live="polite">
+          {metaStatus}
+        </p>
+      )}
+      {!signedIn && loaded.source !== "sample" && (
+        <p className="text-muted mt-1 text-xs">
+          <button
+            type="button"
+            onClick={() => signInWithGoogle()}
+            className="text-accent underline underline-offset-4"
+          >
+            Sign in
+          </button>{" "}
+          to split live streams from videos and use real video lengths.
+        </p>
+      )}
+      {meta && kind === "all" && (
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {view.byKind.map((k) => (
+            <button
+              key={k.id}
+              type="button"
+              onClick={() => setKind(k.id)}
+              className="border-border bg-card hover:border-accent rounded-xl border p-3 text-left"
+            >
+              <span className="text-muted block text-xs">{k.label}</span>
+              <span className="block text-lg font-semibold tabular-nums">
+                {nf.format(k.views)}
+              </span>
+              <span className="text-muted block text-xs tabular-nums">
+                {formatDuration(k.seconds)}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat
@@ -326,6 +514,7 @@ function Dashboard({
         How watch time is estimated: Takeout records when each video started,
         not how long you watched. Each view is credited the time until your next
         view, up to 30 minutes; the last view of a session counts as 8 minutes.
+        When you are signed in, real video lengths cap each view.
       </p>
     </div>
   );

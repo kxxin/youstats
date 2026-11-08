@@ -21,14 +21,18 @@ export const DEFAULT_ESTIMATE: EstimateOptions = {
 export function estimateDurations(
   events: readonly WatchEvent[],
   opts: EstimateOptions = DEFAULT_ESTIMATE,
+  /** Optional known video length per event (seconds); caps the estimate. */
+  lengths?: readonly (number | null | undefined)[],
 ): number[] {
   return events.map((e, i) => {
+    const len = lengths?.at(i);
+    const known = typeof len === "number" && len > 0 ? len : null;
     const next = events.at(i + 1);
-    if (!next) return opts.sessionTailSeconds;
-    const gap = (next.time.getTime() - e.time.getTime()) / 1000;
-    return gap > 0 && gap <= opts.sessionGapSeconds
-      ? gap
-      : opts.sessionTailSeconds;
+    const gap = next ? (next.time.getTime() - e.time.getTime()) / 1000 : Infinity;
+    if (gap > 0 && gap <= opts.sessionGapSeconds) {
+      return known ? Math.min(gap, known) : gap;
+    }
+    return known ? Math.min(known, opts.sessionGapSeconds) : opts.sessionTailSeconds;
   });
 }
 

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { InsightsClient } from "./insights-client";
 
 export const metadata: Metadata = {
@@ -11,10 +10,7 @@ export const metadata: Metadata = {
 export default function InsightsPage() {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-8 sm:py-14">
-      <Link href="/" className="text-accent font-mono text-sm">
-        ← YouStats
-      </Link>
-      <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+      <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
         Watch-time insights
       </h1>
       <p className="text-muted mt-3 max-w-2xl leading-relaxed">

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, formatSpan } from "@/lib/format";
 
 describe("formatDuration", () => {
   it("shows seconds under a minute", () => {
@@ -16,5 +16,16 @@ describe("formatDuration", () => {
   it("rejects invalid input", () => {
     expect(() => formatDuration(-1)).toThrow(RangeError);
     expect(() => formatDuration(Number.NaN)).toThrow(RangeError);
+  });
+});
+
+describe("formatSpan", () => {
+  it("counts whole calendar months", () => {
+    expect(formatSpan(new Date(2019, 2, 12), new Date(2026, 10, 8))).toBe(
+      "7y 7m",
+    );
+    expect(formatSpan(new Date(2026, 0, 31), new Date(2026, 2, 1))).toBe("1m");
+    expect(formatSpan(new Date(2026, 10, 1), new Date(2026, 10, 8))).toBe("7d");
+    expect(formatSpan(new Date(2025, 10, 8), new Date(2026, 10, 8))).toBe("1y");
   });
 });

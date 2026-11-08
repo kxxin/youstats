@@ -19,3 +19,19 @@ export function formatDuration(totalSeconds: number): string {
   if (minutes || parts.length === 0) parts.push(`${minutes}m`);
   return parts.join(" ");
 }
+
+/** Calendar span between two dates as "7y 8m", "3m" or "12d". */
+export function formatSpan(from: Date, to: Date = new Date()): string {
+  if (to < from) return "0d";
+  let months =
+    (to.getFullYear() - from.getFullYear()) * 12 +
+    (to.getMonth() - from.getMonth());
+  if (to.getDate() < from.getDate()) months--;
+  if (months < 1) {
+    const days = Math.floor((to.getTime() - from.getTime()) / 86_400_000);
+    return `${days}d`;
+  }
+  const y = Math.floor(months / 12);
+  const m = months % 12;
+  return [y ? `${y}y` : "", m ? `${m}m` : ""].filter(Boolean).join(" ");
+}

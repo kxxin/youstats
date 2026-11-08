@@ -2,7 +2,7 @@
 
 Personal YouTube analytics: watch time, subscriptions, channel growth and live-stream alerts, built on your own data.
 
-> Status: **Stage 1 — Takeout analytics**. See the [roadmap](#roadmap).
+> Status: **Stage 2 — Google sign-in, subscriptions, Drive import**. See the [roadmap](#roadmap).
 
 ## Features (planned)
 
@@ -46,10 +46,14 @@ Regenerate the demo data with `node scripts/make-sample.mjs`.
 
 - [x] Stage 0 — Foundation: repo, CI, landing page, Vercel deploy
 - [x] Stage 1 — Takeout analytics (`/insights`)
-- [ ] Stage 2 — Google sign-in + subscriptions
+- [x] Stage 2 — Google sign-in, subscriptions (`/subscriptions`), Drive import, live/archive split
 - [ ] Stage 3 — Channel tracker + archive search
 - [ ] Stage 4 — Live-stream alerts
 - [ ] Stage 5 — Live transcript (stretch goal)
+
+## Stage 2 setup
+
+See [`docs/setup-stage2.md`](docs/setup-stage2.md) for the Google Cloud, Supabase and Vercel steps.
 
 ## Limitations
 
