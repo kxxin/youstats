@@ -1,0 +1,25 @@
+name: Daily channel sync
+
+on:
+  schedule:
+    # 16:41 UTC = 00:41 in Malaysia
+    - cron: "41 16 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call /api/cron/daily
+        env:
+          SITE_URL: ${{ vars.YOUSTATS_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o response.json -w "%{http_code}" --max-time 320 \
+            -X POST "$SITE_URL/api/cron/daily" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          cat response.json
+          echo
+          test "$status" = "200"
