@@ -7,8 +7,11 @@ export interface DriveFile {
   size?: string;
 }
 
-/** Takeout names archives like takeout-20261108T051500Z-001.zip (split into numbered parts). */
-const TAKEOUT_RE = /^takeout-(\d{8}T\d{6}Z)-\d+\.zip$/i;
+/**
+ * Takeout names archives like takeout-20261108T051500Z-001.zip or, for
+ * scheduled exports, takeout-20261108T051500Z-1-001.zip (numbered parts).
+ */
+const TAKEOUT_RE = /^takeout-(\d{8}T\d{6}Z)(?:-\d+)+\.zip$/i;
 
 /** All parts of the newest Takeout export, or [] if none. */
 export function pickLatestArchiveSet(files: readonly DriveFile[]): DriveFile[] {
@@ -42,11 +45,12 @@ async function driveFetch(token: string, url: string) {
 }
 
 export async function listTakeoutArchives(token: string): Promise<DriveFile[]> {
-  const q = "name contains 'takeout-' and mimeType = 'application/zip' and trashed = false";
+  // Drive reports zips under several MIME types, so filter by name only.
+  const q = "name contains 'takeout' and trashed = false";
   const url = new URL("https://www.googleapis.com/drive/v3/files");
   url.searchParams.set("q", q);
   url.searchParams.set("orderBy", "createdTime desc");
-  url.searchParams.set("pageSize", "50");
+  url.searchParams.set("pageSize", "100");
   url.searchParams.set("fields", "files(id,name,createdTime,size)");
   const json = (await (await driveFetch(token, url.toString())).json()) as { files: DriveFile[] };
   return json.files;
@@ -68,9 +72,17 @@ export async function loadLatestWatchHistoryFromDrive(
 ): Promise<{ text: string; archive: DriveFile }> {
   onStatus("Connecting to Google Drive…");
   const token = await getGoogleAccessToken();
-  const parts = pickLatestArchiveSet(await listTakeoutArchives(token));
+  const found = await listTakeoutArchives(token);
+  const parts = pickLatestArchiveSet(found);
   const first = parts.at(0);
-  if (!first) throw new Error("No Takeout export found in your Google Drive yet.");
+  if (!first) {
+    const names = found.slice(0, 5).map((f) => f.name);
+    throw new Error(
+      names.length
+        ? `Found ${names.join(", ")} in Drive, but no Takeout .zip archive. Make sure the export file type is .zip.`
+        : "No Takeout export found in your Google Drive yet.",
+    );
+  }
 
   for (const [i, part] of parts.entries()) {
     onStatus(`Downloading ${part.name} (${i + 1}/${parts.length})…`);

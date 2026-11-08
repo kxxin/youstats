@@ -84,12 +84,24 @@ describe("Drive helpers", () => {
       f("takeout-20261101T010000Z-002.zip"),
       f("takeout-20261101T010000Z-001.zip"),
       f("holiday.zip"),
+      f("Takeout"),
     ]);
     expect(picked.map((p) => p.name)).toEqual([
       "takeout-20261101T010000Z-001.zip",
       "takeout-20261101T010000Z-002.zip",
     ]);
     expect(pickLatestArchiveSet([f("x.zip")])).toEqual([]);
+    // Scheduled exports add an extra number segment
+    expect(
+      pickLatestArchiveSet([
+        f("takeout-20261108T051500Z-1-001.zip"),
+        f("takeout-20261108T051500Z-1-002.zip"),
+        f("takeout-20261108T051500Z-1-001.tgz"),
+      ]).map((p) => p.name),
+    ).toEqual([
+      "takeout-20261108T051500Z-1-001.zip",
+      "takeout-20261108T051500Z-1-002.zip",
+    ]);
   });
   it("finds watch-history.json in any language layout", () => {
     expect(
