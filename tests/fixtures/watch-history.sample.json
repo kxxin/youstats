@@ -1,0 +1,59 @@
+[
+  {
+    "header": "YouTube",
+    "title": "Watched Building a tiny compiler",
+    "titleUrl": "https://www.youtube.com/watch?v=aaaaaaaaaaa",
+    "subtitles": [
+      {
+        "name": "Example Code Lab",
+        "url": "https://www.youtube.com/channel/UCaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "time": "2026-10-05T12:00:00.000Z",
+    "products": ["YouTube"],
+    "activityControls": ["YouTube watch history"]
+  },
+  {
+    "header": "YouTube",
+    "title": "Watched Some advert",
+    "titleUrl": "https://www.youtube.com/watch?v=adadadadada",
+    "time": "2026-10-05T12:05:00.000Z",
+    "details": [{ "name": "From Google Ads" }]
+  },
+  {
+    "header": "YouTube",
+    "title": "Watched Building a tiny compiler",
+    "titleUrl": "https://www.youtube.com/watch?v=aaaaaaaaaaa",
+    "subtitles": [
+      {
+        "name": "Example Code Lab",
+        "url": "https://www.youtube.com/channel/UCaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "time": "2026-10-05T12:10:00.000Z"
+  },
+  {
+    "header": "YouTube Music",
+    "title": "Watched Calm piano loop",
+    "titleUrl": "https://music.youtube.com/watch?v=bbbbbbbbbbb",
+    "subtitles": [
+      {
+        "name": "Example Music - Topic",
+        "url": "https://www.youtube.com/channel/UCbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ],
+    "time": "2026-10-07T03:00:00.000Z"
+  },
+  {
+    "header": "YouTube",
+    "title": "Watched a video that has been removed",
+    "time": "2026-11-01T09:00:00.000Z"
+  },
+  {
+    "header": "YouTube",
+    "title": "Visited YouTube Premium",
+    "titleUrl": "https://www.youtube.com/premium",
+    "time": "2026-11-02T09:00:00.000Z"
+  },
+  { "header": "YouTube", "title": "Broken row" }
+]

@@ -8,6 +8,8 @@
   --border: #e3e3de;
   --accent: #0f766e;
   --accent-soft: #ccfbf1;
+  --chart: #0d9488;
+  --grid: #ebebe6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +21,8 @@
     --border: #2a2b2b;
     --accent: #2dd4bf;
     --accent-soft: #123b37;
+    --chart: #11a597;
+    --grid: #232424;
   }
 }
 
@@ -30,6 +34,8 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-chart: var(--chart);
+  --color-grid: var(--grid);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

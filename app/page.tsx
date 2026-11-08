@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const features = [
   {
     stage: 1,
@@ -26,7 +28,7 @@ const features = [
   },
 ] as const;
 
-const CURRENT_STAGE = 0;
+const CURRENT_STAGE = 1;
 
 export default function Home() {
   return (
@@ -46,6 +48,14 @@ export default function Home() {
           <span className="bg-accent size-2 rounded-full" aria-hidden />
           In development — Stage {CURRENT_STAGE} of 5
         </p>
+        <div className="mt-6">
+          <Link
+            href="/insights"
+            className="bg-accent inline-block rounded-lg px-4 py-2 text-sm font-medium text-white dark:text-black"
+          >
+            Analyse your watch history →
+          </Link>
+        </div>
       </header>
 
       <section aria-labelledby="roadmap" className="mt-16">

@@ -2,7 +2,7 @@
 
 Personal YouTube analytics: watch time, subscriptions, channel growth and live-stream alerts, built on your own data.
 
-> Status: **Stage 0 — foundation**. See the [roadmap](#roadmap).
+> Status: **Stage 1 — Takeout analytics**. See the [roadmap](#roadmap).
 
 ## Features (planned)
 
@@ -40,10 +40,12 @@ npm run dev                  # http://localhost:3000
 | `npm test`          | Unit tests (Vitest)  |
 | `npm run format`    | Format with Prettier |
 
+Regenerate the demo data with `node scripts/make-sample.mjs`.
+
 ## Roadmap
 
 - [x] Stage 0 — Foundation: repo, CI, landing page, Vercel deploy
-- [ ] Stage 1 — Takeout analytics
+- [x] Stage 1 — Takeout analytics (`/insights`)
 - [ ] Stage 2 — Google sign-in + subscriptions
 - [ ] Stage 3 — Channel tracker + archive search
 - [ ] Stage 4 — Live-stream alerts
