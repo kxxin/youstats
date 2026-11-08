@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Suspense } from "react";
+import { AuthErrorBanner } from "@/components/auth-error-banner";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
@@ -18,6 +20,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <SiteHeader />
+        <Suspense>
+          <AuthErrorBanner />
+        </Suspense>
         {children}
       </body>
     </html>
