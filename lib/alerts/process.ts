@@ -114,12 +114,38 @@ export async function processVideos(
       notified_upload_at: old?.notified_upload_at ?? null,
     };
 
+    // 1) Save the video's state. The notified_* columns are left out so a
+    //    concurrent run can never reset them.
+    const { error: e3 } = await db.from("live_events").upsert({
+      video_id: row.video_id,
+      channel_id: row.channel_id,
+      title: row.title,
+      status: row.status,
+      scheduled_start: row.scheduled_start,
+      actual_start: row.actual_start,
+      actual_end: row.actual_end,
+      updated_at: new Date().toISOString(),
+    });
+    if (e3) throw e3;
+
     const kinds = alertsToSend({
       ...row,
       published_at: item?.snippet?.publishedAt ?? null,
     });
     const sent: string[] = [];
     for (const kind of kinds) {
+      // 2) Claim the alert atomically: only the run that flips the column
+      //    from null sends it. WebSub pushes, the 5-minute check and RSS
+      //    seeding can overlap, so this is what prevents duplicates.
+      const { data: claimed, error: e4 } = await db
+        .from("live_events")
+        .update({ [NOTIFIED[kind]]: new Date().toISOString() })
+        .eq("video_id", id)
+        .is(NOTIFIED[kind], null)
+        .select("video_id");
+      if (e4) throw e4;
+      if (!claimed?.length) continue;
+
       const { data: users, error: e2 } = await db
         .from("tracked_channels")
         .select("user_id")
@@ -136,15 +162,8 @@ export async function processVideos(
         const r = await deliver(db, u.user_id as string, msg);
         sent.push(`${kind} → ${r.join(", ") || "no delivery configured"}`);
       }
-      // Mark even with no subscribers so a later toggle doesn't replay old events.
-      (row as unknown as Record<string, string>)[NOTIFIED[kind]] =
-        new Date().toISOString();
     }
 
-    const { error: e3 } = await db
-      .from("live_events")
-      .upsert({ ...row, updated_at: new Date().toISOString() });
-    if (e3) throw e3;
     log.push({ videoId: id, status, alerts: sent });
   }
   return log;

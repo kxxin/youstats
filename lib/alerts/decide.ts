@@ -76,10 +76,10 @@ export function buildMessage(
           timeZone,
           timeZoneName: "short",
         }).format(new Date(video.scheduledStart))
-      : "soon";
+      : null;
     return {
       title: `🗓️ ${channelTitle} scheduled a stream`,
-      body: `${video.title} — ${when}`,
+      body: when ? `${video.title} — ${when}` : video.title,
       url,
     };
   }

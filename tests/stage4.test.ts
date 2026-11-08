@@ -145,3 +145,14 @@ describe("WebSub signature", () => {
     expect(verifySignature(ch, FEED, null)).toBe(false);
   });
 });
+
+describe("buildMessage without a start time", () => {
+  it("omits the time instead of saying soon", () => {
+    const m = buildMessage(
+      "scheduled",
+      { videoId: "abcdefghijk", title: "Premiere" },
+      "Ch",
+    );
+    expect(m.body).toBe("Premiere");
+  });
+});
