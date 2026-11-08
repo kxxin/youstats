@@ -4,6 +4,7 @@ import { AuthButton } from "./auth-button";
 const LINKS = [
   { href: "/insights", label: "Insights" },
   { href: "/channels", label: "Channels" },
+  { href: "/live", label: "Live" },
   { href: "/subscriptions", label: "Subscriptions" },
 ] as const;
 

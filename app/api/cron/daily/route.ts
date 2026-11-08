@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { handleError, jsonError } from "@/lib/api";
 import { env } from "@/lib/env";
+import { seedFromRss } from "@/lib/alerts/process";
+import { alertChannelIds, reconcileSubscriptions } from "@/lib/alerts/websub";
 import { fetchChannels, saveChannel, syncUploads } from "@/lib/channels/sync";
 import { createAdminClient } from "@/lib/supabase/server";
 
@@ -40,7 +42,26 @@ export async function POST(request: NextRequest) {
         results[id] = `error: ${e instanceof Error ? e.message : String(e)}`;
       }
     }
+    let websub: unknown;
+    try {
+      websub = await reconcileSubscriptions(db);
+    } catch (e) {
+      websub = `error: ${e instanceof Error ? e.message : String(e)}`;
+    }
+
+    // Safety net for missed WebSub pushes (RSS, no API quota for the feed itself).
+    const rss: Record<string, string> = {};
+    for (const id of await alertChannelIds(db).catch(() => [] as string[])) {
+      try {
+        rss[id] = `${(await seedFromRss(db, id)).length} checked`;
+      } catch (e) {
+        rss[id] = `error: ${e instanceof Error ? e.message : String(e)}`;
+      }
+    }
+
     return NextResponse.json({
+      websub,
+      rss,
       snapshots: items.length,
       channels: ids.length,
       results,

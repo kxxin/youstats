@@ -2,7 +2,7 @@
 
 Personal YouTube analytics: watch time, subscriptions, channel growth and live-stream alerts, built on your own data.
 
-> Status: **Stage 3 — channel tracker and archive search**. See the [roadmap](#roadmap).
+> Status: **Stage 4 — live-stream alerts**. See the [roadmap](#roadmap).
 
 ## Features (planned)
 
@@ -48,12 +48,12 @@ Regenerate the demo data with `node scripts/make-sample.mjs`.
 - [x] Stage 1 — Takeout analytics (`/insights`)
 - [x] Stage 2 — Google sign-in, subscriptions (`/subscriptions`), Drive import, live/archive split
 - [x] Stage 3 — Channel tracker + archive search (`/channels`, daily GitHub Action)
-- [ ] Stage 4 — Live-stream alerts
+- [x] Stage 4 — Live-stream alerts (`/live`, web push + Discord)
 - [ ] Stage 5 — Live transcript (stretch goal)
 
 ## Stage 2 setup
 
-See [`docs/setup-stage2.md`](docs/setup-stage2.md) for the Google Cloud, Supabase and Vercel steps, and [`docs/setup-stage3.md`](docs/setup-stage3.md) for the daily job.
+See [`docs/setup-stage2.md`](docs/setup-stage2.md) for the Google Cloud, Supabase and Vercel steps, [`docs/setup-stage3.md`](docs/setup-stage3.md) for the daily job, and [`docs/setup-stage4.md`](docs/setup-stage4.md) for alerts.
 
 ## Limitations
 

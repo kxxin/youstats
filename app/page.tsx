@@ -28,7 +28,7 @@ const features = [
   },
 ] as const;
 
-const CURRENT_STAGE = 3;
+const CURRENT_STAGE = 4;
 
 export default function Home() {
   return (

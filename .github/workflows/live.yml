@@ -1,0 +1,25 @@
+name: Live stream check
+
+on:
+  schedule:
+    # Every 5 minutes (GitHub may delay scheduled runs by a few minutes).
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call /api/cron/live
+        env:
+          SITE_URL: ${{ vars.YOUSTATS_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          status=$(curl -sS -o response.json -w "%{http_code}" --max-time 90 \
+            -X POST "$SITE_URL/api/cron/live" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          cat response.json
+          echo
+          test "$status" = "200"
